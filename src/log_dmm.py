@@ -14,7 +14,8 @@ if __name__ == "__main__":
         with open('log_{}.txt'.format(str(datetime.now()).replace(' ','_').replace(':','_')),'w') as outfile:
             while True:
                 vout = dmm.read_response()
-                print(vout)
-                outfile.write('{},{}\n'.format(str(datetime.now()),vout))
+                ts = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+                print('{},{}\n'.format(ts,vout))
+                outfile.write('{},{}\n'.format(ts,vout))
     except KeyboardInterrupt:
         pass
