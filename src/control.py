@@ -41,7 +41,7 @@ class HP3458a:
         'neg_right_triangle':b'\x1e',
         'left_triangle':b'\x1f',
         }
-    def __init__(self, port, baud, addr=ADDR, timeout=TIMEOUT, buf_clear=True, init_prologix=False):
+    def __init__(self, port, baud=BAUD, addr=ADDR, timeout=TIMEOUT, buf_clear=True, init_prologix=False):
         self._ser = serial.Serial(port,baud,timeout=timeout)
         atexit.register(self._ser.close)
         self._addr = addr
@@ -98,6 +98,20 @@ class HP3458a:
 
     def clear_display(self):
         self.send_cmd('DISP OFF, "{}"'.format(''.join([self.CHARS['space']]*16)))
+
+    def check_ratio(self):
+        self.send_cmd('RATIO?')
+        return self.read_response()
+
+    def set_sample_rate(self,sample_rate):
+        period = 1.0/sample_rate
+        self.set_timer(period)
+
+    def set_timer(self,timer_val):
+        self.send_cmd('TIMER {}'.format(timer_val))
+
+    def set_ratio(self,enable=True):
+        self.send_cmd('RATIO {}'.format(1 if enable else 0))
 
     def take_readings(self, num_readings=1):
         self.send_cmd('TARM SGL,{}'.format(num_readings))
