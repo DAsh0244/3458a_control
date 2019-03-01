@@ -2,11 +2,20 @@ from control import HP3458a
 from datetime import datetime
 import sys
 import time
-# run time is ~ 3.5 -> 3.7 Hrs = 3.7*3600 s
-RUN_TIME = 5.5*3600
+from argparse import ArgumentParser
+
+# Typical run time in hours
+RUN_TIME = 5.5
+
+parser = ArgumentParser()
+parser.add_argument('port', action='store',type=str,help='dmm serial port address')
+parser.add_argument('dut',action='store',type=int,help='device under test number')
+parser.add_argument('-run_time','-t',action='store',type=float,default=RUN_TIME,help='number of hours to log')
+parser.add_argument('--addr','-a',action='store',type=int,default=22,help='GPIB address of the dmm')
 
 if __name__ == "__main__":
-    dmm = HP3458a(port=sys.argv[1],baud=9600)
+    args = vars(parser.parse_args())
+    dmm = HP3458a(port=args['port'],baud=9600)
     dmm.stop_readings()
     dmm.set_digits(9)
     dmm.set_sample_rate(1)
@@ -14,13 +23,9 @@ if __name__ == "__main__":
     dmm.send_cmd('TARM AUTO')
     # dmm.send_cmd('TRIGGER AUTO')
     timeout = False
-    dut = sys.argv[2]
+    run_time = float(args['run_time'])*3600
     try:
-        run_time = float(sys.argv[3])*3600
-    except IndexError:
-        run_time = RUN_TIME
-    try:
-        with open('../logs/unit{}_{}_.txt'.format(dut, str(datetime.now()).replace(' ','_').replace(':','_')),'w') as outfile:
+        with open('../logs/unit{}_{}_.txt'.format(args['dut'], str(datetime.now()).replace(' ','_').replace(':','_')),'w') as outfile:
             print('logging')
             start_time = time.time()
             while not timeout:
