@@ -3,7 +3,7 @@ from datetime import datetime
 import sys
 import time
 # run time is ~ 3.5 -> 3.7 Hrs = 3.7*3600 s
-RUN_TIME = 3.7*3600
+RUN_TIME = 5.5*3600
 
 if __name__ == "__main__":
     dmm = HP3458a(port=sys.argv[1],baud=9600)
@@ -12,10 +12,15 @@ if __name__ == "__main__":
     dmm.set_sample_rate(1)
     dmm.send_cmd('NRDGS 1 TIMER')
     dmm.send_cmd('TARM AUTO')
-    dmm.send_cmd('TRIGGER AUTO')
+    # dmm.send_cmd('TRIGGER AUTO')
     timeout = False
+    dut = sys.argv[2]
     try:
-        with open('../logs/log_{}.txt'.format(str(datetime.now()).replace(' ','_').replace(':','_')),'w') as outfile:
+        run_time = float(sys.argv[3])*3600
+    except IndexError:
+        run_time = RUN_TIME
+    try:
+        with open('../logs/unit{}_{}_.txt'.format(dut, str(datetime.now()).replace(' ','_').replace(':','_')),'w') as outfile:
             print('logging')
             start_time = time.time()
             while not timeout:
@@ -23,7 +28,7 @@ if __name__ == "__main__":
                 ts = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
                 # print('{},{}\n'.format(ts,vout))
                 outfile.write('{},{}\n'.format(ts,vout))
-                timeout = (time.time() - start_time) > RUN_TIME
+                timeout = (time.time() - start_time) > run_time
     except KeyboardInterrupt:
         pass
     print('done')
