@@ -19,6 +19,7 @@ HEADERS = [
 MCU_NUM_READINGS = len(HEADERS)
 
 SAMPLE_RATE = 1
+CONV_TIME = 1.0
 
 parser = ArgumentParser()
 parser.add_argument('dmm_port', action='store',type=str,help='dmm serial port address')
@@ -30,43 +31,57 @@ parser.add_argument('--msg','-m',action='store',type=str,help='message to append
 
 if __name__ == "__main__":
     args = vars(parser.parse_args())
-    dmm = HP3458a(port=args['dmm_port'],baud=9600)
+    dmm = HP3458a(port=args['dmm_port'],baud=9600,timeout=1.1/SAMPLE_RATE)
     dmm.stop_readings()
-    mcu = MCU(port=args['mcu_port'],baud=9600)
+    mcu = MCU(port=args['mcu_port'],baud=9600,timeout=0.5)
     dmm.set_digits(9)
-    dmm.set_sample_rate(SAMPLE_RATE)
+    # dmm.set_sample_rate(0.9*SAMPLE_RATE)
     dmm.send_cmd('NRDGS 1 TIMER')
-    dmm.send_cmd('TARM AUTO')
-    dmm.send_cmd('NPLC 1000')
+    dmm.send_cmd('NPLC 30')
+    dmm.send_cmd('TIMER 0.01')
     dmm.send_cmd('RANGE {},{}'.format(RANGE,RES/RANGE*100))
-    # dmm.send_cmd('TRIGGER AUTO')
+    dmm.send_cmd('APER {:.6f}'.format(CONV_TIME))
+    dmm.send_cmd('TARM AUTO')
+    dmm.send_cmd('TRIG AUTO')
+    time.sleep(CONV_TIME+2/SAMPLE_RATE)
     timeout = False
     run_time = float(args['run_time'])*3600
+    loops = 0
     try:
+        mcu_data = {header: None for header in HEADERS}
         with open('../logs/unit{}_{}_{}.txt'.format(args['dut'],
                                                     str(datetime.now()).replace(' ','_').replace(':','_'),
                                                     args['msg'].replace(' ','_').replace(':','_'))
                                                     ,'w') as outfile:
             print('logging')
-            outfile.write('#{}\n'.format(datetime.now().strftime("%m/%d/%Y, %H:%M:%S")))
+            outfile.write('#{}\n'.format(datetime.now().strftime("%m/%d/%Y %H:%M:%S")))
             start_time = time.time()
             while not timeout:
                 vout = dmm.read_response()
-                ts = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+                if not vout:
+                    print(loops)
+                # while vout == '':
+                    # vout = dmm.read_response()
+                # ts = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
                 elapsed_time = time.time() - start_time
-                mcu_data = {}
-                for header in HEADERS:
-                    mcu_data = {header: None}
+                # wait for a proper cycle to come around
+                line = mcu.read_response()
+                while line != (None,None):
+                    line = mcu.read_response()
                 for i in range(MCU_NUM_READINGS):
                     header, data = mcu.read_response()
                     mcu_data[header] = data
                 # print('{},{}\n'.format(ts,vout))
-                outfile.write('{},{},'.format(ts,vout))
+                outfile.write('{},{},'.format(elapsed_time, vout))
                 for header, data in mcu_data.items():
                     outfile.write('{},'.format(data))
                 outfile.write('\n')
-                time.sleep(1.5/SAMPLE_RATE)
-                timeout = (time.time() - start_time) > run_time
+                time.sleep(1.05/SAMPLE_RATE)
+                loops += 1
+                # print('looping: {}'.format(loops))
+                # timeout = (time.time() - start_time) > run_time
+                timeout = elapsed_time > run_time
     except KeyboardInterrupt:
         pass
+    print(loops)
     print('done')

@@ -29,11 +29,13 @@ class MCU:
     
     def read_response(self):
         data = self._ser.readline().strip().decode(self.ENCODING)
+        if not data:
+            return None, None
         header, data = data.split(':')
         header = Log_Headers(header)
         data = float(data)
         return header, data
-    
+        
 class HP3458a:
     ENCODING = 'ascii'
     CHARS = {
@@ -85,7 +87,7 @@ class HP3458a:
             self.send_cmd('ID?')
             self._id = self.read_response()
             if '3458a' not in self._id.lower():
-                raise ValueError('Returned ID is not a 3458a')
+                raise ValueError('Returned %s ID is not a 3458a ' % self._id)
             self._rev = self.get_rev()
 
     def get_rev(self):
