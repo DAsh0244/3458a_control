@@ -1,4 +1,5 @@
 
+from enum import Enum
 import serial
 import atexit
 
@@ -7,7 +8,32 @@ ADDR = 22
 BAUD = 9600
 TIMEOUT = 1.0
 
+class Log_Headers(Enum):
+    CORRECTION_VALUE = 'CV'
+    DAC_VALUE = 'DV'
+    DUT_TEMP = 'TP'
+    TEMP_SENSOR = 'TM'
+    TRIM_VALUE = 'TR'
+    MCU_TEMP = 'TH'
 
+
+class MCU:
+    ENCODING = 'ascii'
+    def __init__(self, port, baud=BAUD, addr=ADDR, timeout=TIMEOUT):
+        self._ser = serial.Serial(port,baud,timeout=timeout)
+        atexit.register(self._ser.close)
+        self._addr = addr
+
+    # def send_cmd(self, cmd):
+    #     self._ser.write((cmd.strip()+'\n').encode(self.ENCODING))
+    
+    def read_response(self):
+        data = self._ser.readline().strip().decode(self.ENCODING)
+        header, data = data.split(':')
+        header = Log_Headers(header)
+        data = float(data)
+        return header, data
+    
 class HP3458a:
     ENCODING = 'ascii'
     CHARS = {
