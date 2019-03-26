@@ -11,8 +11,8 @@ RES = 100e-7
 HEADERS = [
     # Log_Headers.CORRECTION_VALUE,
     # Log_Headers.DAC_VALUE,
-    Log_Headers.DUT_TEMP,
     Log_Headers.TEMP_SENSOR,
+    Log_Headers.DUT_TEMP,
     Log_Headers.TRIM_VALUE,
     Log_Headers.MCU_TEMP
 ]
@@ -76,7 +76,7 @@ if __name__ == "__main__":
                 for header, data in mcu_data.items():
                     outfile.write('{},'.format(data))
                 outfile.write('\n')
-                time.sleep(1.05/SAMPLE_RATE)
+                time.sleep(1.1/SAMPLE_RATE)
                 loops += 1
                 # print('looping: {}'.format(loops))
                 # timeout = (time.time() - start_time) > run_time

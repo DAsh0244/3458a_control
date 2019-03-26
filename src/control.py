@@ -28,14 +28,26 @@ class MCU:
     #     self._ser.write((cmd.strip()+'\n').encode(self.ENCODING))
     
     def read_response(self):
-        data = self._ser.readline().strip().decode(self.ENCODING)
-        if not data:
-            return None, None
-        header, data = data.split(':')
-        header = Log_Headers(header)
-        data = float(data)
-        return header, data
-        
+        try:
+            data = self._ser.readline().strip().decode(self.ENCODING)
+            # print(repr(data))
+            try:
+                if not data:
+                    return None, None
+                header, data = data.split(':')
+                header = Log_Headers(header)
+                try:
+                    data = float(data)
+                except ValueError:
+                    print(repr(data))
+                return header, data
+            except ValueError:
+                print(repr(data))
+                return None,'BAD'
+        except UnicodeDecodeError:
+            print(repr(data))
+            return None,'BAD'
+
 class HP3458a:
     ENCODING = 'ascii'
     CHARS = {
